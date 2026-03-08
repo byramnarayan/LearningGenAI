@@ -1,0 +1,9 @@
+services:
+  vector-db:
+    image: qdrant/qdrant
+    ports:
+      - 6333:6333
+# terminal command to run the docker-compose file
+# docker-compose up
+# to run in detached mode: docker-compose up -d
+# docker-compose -f docker-compose.yml up -d
