@@ -1,0 +1,47 @@
+HOW TO USE DOCKER
+=================
+
+WHAT IS DOCKER?
+---------------
+Docker is a container management tool. It lets you run tools like Ollama
+inside isolated containers instead of installing them directly on your machine.
+
+WHY USE DOCKER OVER DIRECT INSTALLATION?
+-----------------------------------------
+- Platform agnostic: same steps work on macOS, Linux, and Windows
+- Does not bloat your local machine
+- Useful for both local development and server deployments
+
+INSTALLATION
+------------
+1. Go to docker.com
+2. Download Docker Desktop for your OS
+3. Install and launch Docker Desktop
+
+VERIFY INSTALLATION
+-------------------
+Open your terminal and run:
+
+    docker
+    docker --version
+
+If you see output, Docker is installed correctly.
+
+BASIC COMMANDS
+--------------
+Pull an image from Docker Hub:
+    docker pull busybox
+
+Run a container:
+    docker run busybox ls
+
+List running containers:
+    docker container ps
+
+Remove a container:
+    docker container rm <container_id>
+
+NEXT STEP
+---------
+Use Docker to install and run Ollama as a container
+instead of a full local installation.

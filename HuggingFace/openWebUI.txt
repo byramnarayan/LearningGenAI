@@ -1,0 +1,31 @@
+OPEN WEB UI + OLLAMA COMMANDS
+==============================
+
+1. PULL Open Web UI image:
+    docker pull ghcr.io/open-webui/open-webui:main
+
+2. RUN Open Web UI container:
+    docker run -d -p 3000:8080 --add-host=host.docker.internal:host-gateway \
+    -v open-webui:/app/backend/data --name open-webui \
+    ghcr.io/open-webui/open-webui:main
+
+3. ACCESS in browser:
+    http://localhost:3000
+
+PORTS
+-----
+Ollama     : 11434
+Open Web UI: 3000
+
+PULL A MODEL (via Open Web UI Admin Panel)
+------------------------------------------
+Admin Panel > Settings > Models > enter model name > click Download
+
+Example model tag:
+    gemma:2b   (2GB, Google's 2 billion parameter model)
+
+Browse available models at:
+    https://ollama.com/models
+
+NOTE: Running models locally uses significant CPU/GPU resources.
+      Good hardware is recommended.

@@ -1,0 +1,17 @@
+OLLAMA DOCKER COMMANDS
+======================
+
+Pull Ollama image:
+    docker run ollama/ollama
+
+Run Ollama with port exposed (recommended):
+    docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+
+Check running containers:
+    docker container ps
+
+Remove a container:
+    docker container rm <container_id>
+
+NOTE: Ollama runs on port 11434.
+      Use Open Web UI as the UI layer to interact with the model.
