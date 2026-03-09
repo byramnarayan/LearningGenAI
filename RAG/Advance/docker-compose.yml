@@ -1,0 +1,8 @@
+services:
+  valkey:
+    image: valkey/valkey
+    ports:
+      - 6379:6379
+#  to establish a connection between the valkey and es container, we need to create a network
+#  run cmd: docker network create valkey-network
+#  docker compose up -d 

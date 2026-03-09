@@ -1,0 +1,1531 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║               DOCKER — COMPLETE LEARNING GUIDE (Beginner → Advanced)         ║
+║                    Based on 20-Video Course Transcripts                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 1 — THE PROBLEM DOCKER SOLVES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Imagine you built an e-commerce app on your MacBook:
+   Node JS 18 + PostgreSQL 12 + MongoDB + Redis
+
+ You invite a new developer. Problems begin:
+
+  ┌─────────────────────────────────────────────────────┐
+  │  YOUR MACHINE          NEW DEVELOPER'S MACHINE      │
+  │  MacBook               Windows PC                   │
+  │  Node JS 18       ≠    Node JS 20 (latest)          │
+  │  PostgreSQL 12    ≠    PostgreSQL 15                │
+  │  Redis installed  ≠    Redis not installed          │
+  │  App WORKS ✓           App CRASHES ✗                │
+  └─────────────────────────────────────────────────────┘
+
+ Classic problem: "It works on my machine!"
+
+ More problems:
+   - You must maintain a list of ALL tools + versions
+   - New feature = new tool = tell everyone to install it
+   - Deploying to production server (Linux) from Mac = more mismatches
+
+ DOCKER SOLVES THIS by packaging your entire environment into one shareable unit.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 2 — DOCKER vs VIRTUAL MACHINES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ VIRTUAL MACHINE ARCHITECTURE:
+ ┌────────────────────────────────────────────────────────┐
+ │  Hardware (RAM, CPU, Motherboard)                      │
+ │  ├── Operating System (e.g. Windows)                   │
+ │      ├── Hypervisor (VMware / VirtualBox)  ← HEAVY     │
+ │          ├── VM 1: Ubuntu  (~30–40 GB)                 │
+ │          ├── VM 2: Linux   (~30–40 GB)                 │
+ │          └── VM 3: Windows (~30–40 GB)                 │
+ └────────────────────────────────────────────────────────┘
+  Each VM has its OWN FULL KERNEL. Very resource-hungry.
+
+ DOCKER ARCHITECTURE:
+ ┌────────────────────────────────────────────────────────┐
+ │  Hardware (RAM, CPU, Motherboard)                      │
+ │  ├── Operating System + Kernel (shared)                │
+ │      ├── Docker Engine  ← LIGHTWEIGHT (~28 MB)         │
+ │          ├── Container 1: Ubuntu slice (~28 MB)        │
+ │          ├── Container 2: Alpine  (~5 MB)              │
+ │          └── Container 3: Node app (~137 MB)           │
+ └────────────────────────────────────────────────────────┘
+  Containers SHARE the host kernel. Much lighter!
+
+ KEY COMPARISON:
+ ┌────────────────┬──────────────────┬──────────────────┐
+ │ Feature        │ Virtual Machine  │ Docker           │
+ ├────────────────┼──────────────────┼──────────────────┤
+ │ Size           │ 30–40 GB         │ 28 MB – 200 MB   │
+ │ Startup time   │ Minutes          │ Seconds          │
+ │ Resource usage │ Very heavy       │ Lightweight      │
+ │ Shareable      │ Hard (huge file) │ Easy (push/pull) │
+ │ Kernel         │ Own kernel       │ Shares host      │
+ │ Isolation      │ Full OS          │ Process-level    │
+ └────────────────┴──────────────────┴──────────────────┘
+
+ NOTE: Docker uses your host kernel, so:
+   Linux kernel host → can only run Linux containers
+   Windows kernel host → can only run Windows containers
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 3 — INSTALLING DOCKER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Official download: https://docs.docker.com/engine/install/
+
+ Choose your platform:
+   Mac     → Docker Desktop (Intel or Apple Silicon)
+   Windows → Docker Desktop (x86 or ARM)
+   Linux   → Follow Ubuntu/Debian specific commands
+
+ After installation, verify in terminal:
+   docker version           ← shows client + server info
+   docker info              ← shows full system info
+
+ Quick test:
+   docker run -it ubuntu    ← pulls Ubuntu (~28 MB) and runs it!
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 4 — DOCKER IMAGE vs DOCKER CONTAINER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ANALOGY — Think of it like a laptop + operating system:
+
+  ┌──────────────────────────────────────────────────────┐
+  │  Windows OS CD/ISO  =  Docker IMAGE                  │
+  │  (just a config file, can't run by itself)           │
+  │                                                      │
+  │  Laptop (hardware)  =  Docker CONTAINER              │
+  │  (the actual running environment)                    │
+  └──────────────────────────────────────────────────────┘
+
+  Docker IMAGE  → Configuration blueprint (read-only)
+  Docker CONTAINER → Running instance of an image
+
+  One image → multiple containers (like one Windows CD → many laptops)
+
+ ISOLATION VISUALIZED:
+ ┌─────────────────────────────────────────────────────────┐
+ │   IMAGE: Ubuntu (shared blueprint)                      │
+ │   ┌──────────────────┐   ┌──────────────────┐           │
+ │   │ Container A      │   │ Container B      │           │
+ │   │ my_file.txt ✓    │   │ secret.txt ✓     │           │
+ │   │ secret.txt ✗     │   │ my_file.txt ✗    │           │
+ │   │ (own storage)    │   │ (own storage)    │           │ 
+ │   └──────────────────┘   └──────────────────┘           │ 
+ │   Data is NOT shared between containers!                │
+ │   When container is deleted → data is gone              │
+ └─────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 5 — DOCKER CLI BASICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ How CLI works:
+ ┌──────────────────────────────────────────────────────────┐
+ │  Terminal (you type)                                     │
+ │       │                                                  │
+ │       ▼                                                  │
+ │  Docker CLI  →  Docker Engine (daemon)  →  Containers    │
+ │                       │                                  │
+ │               Docker Desktop UI also                     │
+ │               talks to same engine                       │
+ └──────────────────────────────────────────────────────────┘
+
+ ESSENTIAL COMMANDS:
+ ┌────────────────────────────────────────────────────────────────┐
+ │ docker ps               List running containers                │
+ │ docker ps -a            List ALL containers (including exited) │
+ │ docker images           List all local images                  │
+ │ docker image ls         Same as above                          │
+ │ docker info             System-wide Docker info                │
+ │ docker version          Docker version info                    │
+ └────────────────────────────────────────────────────────────────┘
+
+ Image sources: hub.docker.com (like GitHub for Docker images)
+   Available: ubuntu, alpine, busybox, node, postgres, redis, nginx...
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 6 — RUNNING CONTAINERS (docker run explained)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Full command anatomy:
+ ┌────────────────────────────────────────────────────────────────┐
+ │  docker run  [options]     [image]   [command]                 │
+ │  docker run  -it           ubuntu    ls                        │
+ │                │                                               │
+ │        -i = interactive (keep stdin open, lets you type)       │
+ │        -t = tty (connects your terminal to container's term.)  │
+ └────────────────────────────────────────────────────────────────┘
+
+ FLOW when you run "docker run ubuntu":
+ ┌──────────────────────────────────────────────────────────┐
+ │  1. Docker looks for Ubuntu image LOCALLY                │
+ │         ↓ not found?                                     │
+ │  2. Pulls from hub.docker.com automatically              │
+ │         ↓                                                │
+ │  3. Creates a container and runs it                      │
+ └──────────────────────────────────────────────────────────┘
+
+ Manual pull (pre-download without running):
+   docker pull busybox      ← pulls image only, no container
+
+ Override default command:
+   docker run busybox ping google.com
+   docker run ubuntu ls
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 7 — MANAGING DOCKER IMAGES (CLI)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ┌──────────────────────────────────────────────────────────────────┐
+ │ docker images                  List all images                   │
+ │ docker image ls                Same                              │
+ │ docker image inspect alpine    Show full metadata of an image    │
+ │ docker image rm alpine         Remove an image                   │
+ │ docker image prune             Remove all dangling images        │
+ │ docker pull alpine             Pull without running              │
+ │ docker image tag myapp v1      Add a tag/alias to an image       │
+ └──────────────────────────────────────────────────────────────────┘
+
+ NOTE: You cannot remove an image that is being used by a container.
+       Stop/remove the container first, then remove the image.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 8 — MANAGING CONTAINERS (CLI)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ┌──────────────────────────────────────────────────────────────────┐
+ │ docker ps                     List running containers            │
+ │ docker ps -a                  List all (including stopped)       │
+ │ docker run --name myapp ubuntu  Name your container              │
+ │ docker kill <id>              Kill a running container           │
+ │ docker rm <id>                Remove a container                 │
+ │ docker container rm <id>      Same as above                      │
+ │ docker exec <id> <command>    Run a command inside container     │
+ │ docker logs <id>              Fetch logs of container            │
+ └──────────────────────────────────────────────────────────────────┘
+
+ KILL vs REMOVE:
+ ┌────────────────────────────────────────────────────────┐
+ │  docker kill  →  Stops the container, DATA still there │
+ │  docker rm    →  Removes container + ALL its data      │
+ │                                                        │
+ │  Like: shutdown laptop vs destroy the laptop           │
+ └────────────────────────────────────────────────────────┘
+
+ ENTRY POINT — Default command that runs when container starts:
+   docker image inspect ubuntu → see "Cmd": ["/bin/bash"]
+   You can override: docker run ubuntu ls
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 9 — CREATING YOUR OWN IMAGE (Dockerfile)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Goal: Turn your Node.js app into a Docker image so anyone can run it!
+
+ A Dockerfile is a config file with instructions to build your image.
+ Filename: "Dockerfile" (capital D, no extension)
+
+ SAMPLE DOCKERFILE (Node.js app):
+ ┌────────────────────────────────────────────────────────────────┐
+ │  # Step 1: Choose base image                                   │
+ │  FROM node:20.17-alpine                                        │
+ │                                                                │
+ │  # Step 2: Set working directory inside container              │
+ │  WORKDIR /home/app                                             │
+ │                                                                │
+ │  # Step 3: Copy package files first (for caching)              │
+ │  COPY package*.json ./                                         │
+ │                                                                │
+ │  # Step 4: Install dependencies                                │
+ │  RUN npm install                                               │
+ │                                                                │
+ │  # Step 5: Copy source code                                    │
+ │  COPY . .                                                      │
+ │                                                                │
+ │  # Step 6: Set default startup command                         │
+ │  CMD ["npm", "start"]                                          │
+ └────────────────────────────────────────────────────────────────┘
+
+ BUILD the image:
+   docker build -t my-app .
+
+ RUN the image:
+   docker run -it my-app
+
+ DOCKERFILE INSTRUCTIONS CHEATSHEET:
+ ┌───────────────┬──────────────────────────────────────────────┐
+ │ FROM          │ Base image to start from                     │
+ │ WORKDIR       │ Set working directory inside container       │
+ │ COPY src dest │ Copy files from local machine to container   │
+ │ RUN command   │ Run a shell command during image build       │
+ │ CMD [...]     │ Default command when container starts        │
+ │ EXPOSE port   │ Document which port the app uses             │
+ │ ENV key=val   │ Set environment variables                    │
+ │ USER username │ Run app as a specific user (security)        │
+ └───────────────┴──────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 10 — OPTIMIZING DOCKER IMAGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ TIP 1 — Use lightweight base image:
+ ┌─────────────────────────────────────────────┐
+ │  FROM ubuntu         → 367 MB  (too heavy)  │
+ │  FROM node:20-alpine → 137 MB  (better!)    │
+ └─────────────────────────────────────────────┘
+
+ TIP 2 — Layer caching. Each line = one layer. Docker caches layers!
+ ┌─────────────────────────────────────────────────────────────────┐
+ │  Layer 1: FROM node:20-alpine       ← cached                    │
+ │  Layer 2: WORKDIR /home/app         ← cached                    │
+ │  Layer 3: COPY package*.json ./     ← cached (if unchanged)     │
+ │  Layer 4: RUN npm install           ← cached (if pkg unchanged) │
+ │  Layer 5: COPY . .                  ← RE-RUNS when src changes  │
+ │  Layer 6: CMD ["npm","start"]       ← cached                    │
+ └─────────────────────────────────────────────────────────────────┘
+
+ BAD ORDER (rebuilds npm install on every source change):
+   COPY . .
+   RUN npm install      ← runs even if only index.js changed!
+
+ GOOD ORDER (npm install only runs when package.json changes):
+   COPY package*.json ./
+   RUN npm install
+   COPY . .             ← source code changes don't trigger npm install
+
+ TIP 3 — CMD sets default startup command:
+   CMD ["npm", "start"]
+   Users can still override: docker run my-app sh
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 11 — PORT MAPPING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Why port mapping is needed:
+
+ ┌──────────────────────────────────────────────────────────────┐
+ │  HOST MACHINE (your laptop)                                  │
+ │  ┌────────────────────────────────┐                          │
+ │  │  Docker Container              │                          │
+ │  │  App running on port 8000      │                          │
+ │  │  ← ISOLATED, not accessible → │                           │
+ │  └────────────────────────────────┘                          │
+ │                                                              │
+ │  localhost:8000 → NOTHING (container is isolated!)           │
+ └──────────────────────────────────────────────────────────────┘
+
+ WITH PORT MAPPING (-p):
+ ┌──────────────────────────────────────────────────────────────┐
+ │  HOST port 3000  ←──────────→  CONTAINER port 8000           │
+ │                                                              │
+ │  docker run -p 3000:8000 my-app                              │
+ │              HOST:CONTAINER                                  │
+ │                                                              │
+ │  Now localhost:3000 works! ✓                                 │
+ └──────────────────────────────────────────────────────────────┘
+
+ PORT MAPPING COMMANDS:
+ ┌──────────────────────────────────────────────────────────────────┐
+ │ docker run -p 8000:8000 my-app     Map same port                 │
+ │ docker run -p 3000:8000 my-app     Map different ports           │
+ │ docker run -p 3000:8000 \                                        │
+ │            -p 3001:9000 my-app     Map multiple ports            │
+ │ docker run -P my-app               Auto port mapping (random)    │
+ └──────────────────────────────────────────────────────────────────┘
+
+ AUTO PORT MAPPING (-P capital):
+   Add EXPOSE in Dockerfile → use -P when running
+   Docker randomly picks host port and maps to your EXPOSE port
+   Check which port with: docker ps
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 12 — USEFUL RUNTIME FLAGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ┌─────────────────────────────────────────────────────────────────┐
+ │ Flag           │ What it does                                   │
+ ├────────────────┼──────────────────────────────────────────────  │
+ │ -i             │ Interactive (keep stdin open)                  │
+ │ -t             │ Attach terminal (pseudo-TTY)                   │
+ │ -d             │ Detached mode (run in background)              │
+ │ --rm           │ Auto-remove container when it exits            │
+ │ --name myapp   │ Give container a custom name                   │
+ │ -p HOST:CONT   │ Port mapping                                   │
+ │ -P             │ Auto port mapping                              │
+ │ -e PORT=3000   │ Set environment variable                       │
+ │ --env-file .env│ Load env variables from file                   │
+ └────────────────┴────────────────────────────────────────────────┘
+
+ DETACHED MODE WORKFLOW:
+ ┌────────────────────────────────────────────────────────────────┐
+ │  docker run -d -P --rm my-app        ← runs in background      │
+ │  docker ps                           ← see it running          │
+ │  docker stop <id>                    ← stop it (auto removed)  │
+ └────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 13 — PUBLISHING TO DOCKER HUB
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Docker Hub = GitHub for Docker images (hub.docker.com)
+
+ ┌──────────────────────────────────────────────────────────────┐
+ │  YOUR MACHINE              DOCKER HUB                        │
+ │  ┌─────────────┐  push →  ┌─────────────────────────┐        │
+ │  │ my-app image│          │ yourname/node-app:latest │       │
+ │  └─────────────┘  ← pull  └─────────────────────────┘        │
+ │                            Anyone can pull this image!       │
+ └──────────────────────────────────────────────────────────────┘
+
+ STEPS TO PUBLISH:
+ ┌───────────────────────────────────────────────────────────────────┐
+ │ 1. Create account at hub.docker.com                               │
+ │ 2. Create a repository (e.g. yourname/node-app)                   │
+ │                                                                   │
+ │ 3. Build image with correct name:                                 │
+ │    docker build -t yourname/node-app .                            │
+ │                                                                   │
+ │    OR tag existing image:                                         │
+ │    docker tag my-app yourname/node-app                            │
+ │                                                                   │
+ │ 4. Login:                                                         │
+ │    docker login                                                   │
+ │                                                                   │
+ │ 5. Push:                                                          │
+ │    docker push yourname/node-app                                  │
+ │                                                                   │
+ │ 6. Version tagging:                                               │
+ │    docker tag my-app yourname/node-app:v1                         │
+ │    docker push yourname/node-app:v1                               │
+ └───────────────────────────────────────────────────────────────────┘
+
+ Anyone can now pull your image with:
+   docker run -it yourname/node-app
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 14 — MULTI-STAGE BUILDS (Advanced Optimization)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Problem: TypeScript apps need TypeScript to BUILD but NOT to run.
+          Why ship TypeScript + source code in production image?
+
+ WITHOUT multi-stage:
+ ┌─────────────────────────────────────────────────────────────┐
+ │  Final Image contains:                                      │
+ │   - Full TypeScript + types (~100 MB)                       │
+ │   - All source .ts files (unneeded)                         │
+ │   - node_modules with devDependencies (unneeded)            │
+ │   - dist/ (the only thing actually needed!)                 │
+ │  Size: ~163 MB                                              │
+ └─────────────────────────────────────────────────────────────┘
+
+ WITH multi-stage:
+ ┌──────────────────────────────────────────────────────────────┐
+ │  STAGE 1 (builder) — build only, will be discarded           │
+ │   FROM node:20-alpine AS builder                             │
+ │   COPY package*.json tsconfig.json ./                        │
+ │   RUN npm install                                            │
+ │   COPY src/ src/                                             │
+ │   RUN npm run build    ← creates dist/                       │
+ │                                                              │
+ │  STAGE 2 (runner) — only this is shipped                     │
+ │   FROM node:20-alpine AS runner                              │
+ │   COPY --from=builder /app/dist ./dist       ← just dist!    │
+ │   COPY package*.json ./                                      │
+ │   RUN npm install --omit=dev     ← no TypeScript!            │
+ │   CMD ["npm", "start"]                                       │
+ │                                                              │
+ │  Final Size: ~100 MB (no source, no TypeScript!)             │
+ └──────────────────────────────────────────────────────────────┘
+
+ Build a specific dockerfile:
+   docker build -f Dockerfile.old -t myapp-old .
+
+ The LAST stage = what gets published and shared.
+
+ RUST/C example:
+   Stage 1: Install full compiler, copy source, compile → get binary
+   Stage 2: Copy ONLY the binary, run it → no compiler, no source!
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 15 — SECURITY BEST PRACTICES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ RULE: Never run your app as root user inside the container!
+
+ If app runs as root → has full file system access → security risk.
+
+ ADD a non-root user in Dockerfile:
+ ┌────────────────────────────────────────────────────────────────┐
+ │  # Create a group                                             │
+ │  RUN addgroup --gid 1001 nodejs                               │
+ │                                                               │
+ │  # Create a user in that group                               │
+ │  RUN adduser --uid 1001 --ingroup nodejs nodejs               │
+ │                                                               │
+ │  # Switch to that user before starting app                   │
+ │  USER nodejs                                                  │
+ │                                                               │
+ │  CMD ["npm", "start"]   ← runs as nodejs user, NOT root      │
+ └────────────────────────────────────────────────────────────────┘
+
+ PASSING ENVIRONMENT VARIABLES AT RUNTIME:
+ ┌────────────────────────────────────────────────────────────────┐
+ │ docker run -e PORT=3000 my-app          Single variable       │
+ │ docker run -e PORT=3000 -e DB=mongo ... Multiple variables    │
+ │ docker run --env-file .env my-app       Load from .env file   │
+ └────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 16 — DOCKER NETWORKING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Docker containers have internet access by default. How?
+
+ ┌──────────────────────────────────────────────────────────────────┐
+ │  HOST MACHINE                                                    │
+ │  ┌──────────────────────────────────────────────────────┐       │
+ │  │  Docker Engine                                        │       │
+ │  │  ┌────────────────────────────────────────────┐      │       │
+ │  │  │  Bridge Network (default, auto-created)     │      │       │
+ │  │  │  IP range: 172.17.x.x                       │      │       │
+ │  │  │  ┌──────────────┐  ┌──────────────┐         │      │       │
+ │  │  │  │ Container A   │  │ Container B   │        │      │       │
+ │  │  │  │ 172.17.0.2    │  │ 172.17.0.3   │        │      │       │
+ │  │  │  └──────────────┘  └──────────────┘         │      │       │
+ │  │  └────────────────────────────────────────────┘      │       │
+ │  └──────────────────────────────────────────────────────┘       │
+ │        │                                                          │
+ │        ▼                                                          │
+ │     Wi-Fi Router → Internet                                       │
+ └──────────────────────────────────────────────────────────────────┘
+
+ NETWORK TYPES:
+ ┌────────────────┬──────────────────────────────────────────────────┐
+ │ bridge         │ Default. Containers share a virtual network      │
+ │ host           │ Container uses host's network directly (no isol.)│
+ │ none           │ No network access at all (pure isolation)        │
+ │ overlay        │ Connect multiple Docker daemons together         │
+ │ ipvlan         │ Full control over IP address allocation          │
+ │ macvlan        │ Container gets its own MAC address (like a PC)   │
+ └────────────────┴──────────────────────────────────────────────────┘
+
+ NETWORK COMMANDS:
+ ┌───────────────────────────────────────────────────────────────────┐
+ │ docker network ls                   List all networks            │
+ │ docker network inspect bridge       Inspect bridge network       │
+ │ docker network create milky-way     Create custom bridge network │
+ │ docker network connect milky-way <container>   Attach container  │
+ │ docker network disconnect milky-way <container> Remove from net  │
+ │ docker network rm milky-way         Delete a network             │
+ └───────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 17 — DEFAULT vs USER-DEFINED BRIDGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ┌─────────────────────────────────────────────────────────────────┐
+ │  DEFAULT BRIDGE              USER-DEFINED BRIDGE                │
+ │  ─────────────               ────────────────────               │
+ │  Auto-created by Docker      You create it manually             │
+ │  Communicate by IP only      Auto DNS by container NAME ✓       │
+ │  Risky env variable sharing  Better isolation                   │
+ │  Less flexibility            Can attach/detach on the fly ✓     │
+ └─────────────────────────────────────────────────────────────────┘
+
+ USER-DEFINED BRIDGE EXAMPLE:
+ ┌───────────────────────────────────────────────────────────────────┐
+ │  # Create the network                                            │
+ │  docker network create milky-way                                 │
+ │                                                                  │
+ │  # Run containers on this network                               │
+ │  docker run -itd --network milky-way --name spiderman busybox   │
+ │  docker run -itd --network milky-way --name ironman busybox     │
+ │                                                                  │
+ │  # Ping by NAME (not IP!) — works because of auto DNS           │
+ │  docker exec spiderman ping ironman    ← works! ✓               │
+ │  docker exec spiderman ping container_two  ← fails! (diff net)  │
+ └───────────────────────────────────────────────────────────────────┘
+
+ REAL-WORLD USE CASE:
+ ┌──────────────────────────────────────────────────────────────────┐
+ │  Custom network: "app-network"                                   │
+ │  ┌──────────────┐  can talk  ┌──────────────┐                  │
+ │  │ node-app      │ ─────────→ │ redis         │ (private)       │
+ │  │ (exposed 3000)│            │ (not exposed) │                  │
+ │  └──────────────┘            └──────────────┘                  │
+ │         │                    ┌──────────────┐                  │
+ │         └────────────────────│ postgres      │ (private)        │
+ │                               └──────────────┘                  │
+ │                                                                  │
+ │  Only node-app is public. Redis/Postgres stay hidden. Safe! ✓   │
+ └──────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 18 — DOCKER VOLUMES (Persistent & Shared Storage)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ PROBLEM: Container data is lost when container is removed.
+
+ ┌───────────────────────────────────────────────────────────────┐
+ │  Container deleted → all data gone  ✗                        │
+ │                                                               │
+ │  Also: one container cannot access another's files           │
+ └───────────────────────────────────────────────────────────────┘
+
+ SOLUTION — Volume Mounting:
+ Mount a host folder INTO the container. Data persists on your machine!
+
+ ┌──────────────────────────────────────────────────────────────────┐
+ │  HOST MACHINE                                                    │
+ │  /Users/you/downloads/my-data/  ←──────────────────┐           │
+ │                                                     │           │
+ │  Docker Container                                   │           │
+ │  /home/ubuntu/piyush/           ←── mounted ───────┘           │
+ │                                                                  │
+ │  Any file written inside container appears on host!             │
+ │  Data survives even after container is deleted!                 │
+ └──────────────────────────────────────────────────────────────────┘
+
+ SYNTAX:
+ ┌────────────────────────────────────────────────────────────────────┐
+ │  docker run -it \                                                 │
+ │    -v /host/path:/container/path \                               │
+ │    ubuntu                                                         │
+ │                                                                   │
+ │  Example:                                                         │
+ │  docker run -it \                                                 │
+ │    -v /Users/you/downloads/my-data:/home/ubuntu/piyush \         │
+ │    ubuntu                                                         │
+ └────────────────────────────────────────────────────────────────────┘
+
+ MULTIPLE CONTAINERS, ONE VOLUME:
+ ┌──────────────────────────────────────────────────────────────────┐
+ │  ┌─────────────────────┐   ┌────────────────────────┐          │
+ │  │ Ubuntu container     │   │ BusyBox container       │         │
+ │  │ /home/ubuntu/piyush  │   │ /home/ubuntu/piyush    │         │
+ │  └──────────┬──────────┘   └───────────┬────────────┘          │
+ │             └───────────────────────────┘                        │
+ │                           │                                      │
+ │             HOST: /my-data/ (shared!)                           │
+ └──────────────────────────────────────────────────────────────────┘
+  Two completely different containers share the same folder!
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ QUICK REFERENCE — ALL KEY COMMANDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ CONTAINERS:
+   docker run -it ubuntu                Run container interactively
+   docker run -d -p 3000:8000 my-app    Run in background with port map
+   docker run --rm my-app               Auto-remove when done
+   docker run --name myapp my-app       Name the container
+   docker ps                            List running containers
+   docker ps -a                         List all containers
+   docker kill <id>                     Stop container
+   docker rm <id>                       Remove container
+   docker exec <id> bash                Execute command in container
+   docker logs <id>                     View container logs
+
+ IMAGES:
+   docker images                        List all images
+   docker pull ubuntu                   Pull image only
+   docker build -t my-app .             Build image from Dockerfile
+   docker image rm alpine               Remove an image
+   docker image inspect ubuntu          Inspect image metadata
+   docker tag my-app user/my-app:v1     Tag an image
+   docker push user/my-app              Push to Docker Hub
+   docker login                         Login to Docker Hub
+
+ NETWORKS:
+   docker network ls                    List networks
+   docker network create my-net         Create user-defined network
+   docker network inspect bridge        Inspect a network
+   docker network connect my-net <id>   Connect container to network
+   docker network disconnect my-net <id> Disconnect
+   docker network rm my-net             Remove a network
+
+ VOLUMES:
+   docker run -v /host/path:/container/path ubuntu    Mount volume
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║          DOCKER — COMPLETE LEARNING GUIDE  (Part 2: Ch 19 → 33)              ║
+║              Continuing from Part 1 (Chapters 1–18)                          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 19 — NAMED VOLUMES (Persistent, Docker-Managed Storage)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Recap from Ch 18: Host volumes = you create a folder on your machine.
+ Named volumes = Docker creates and manages the storage for you.
+
+ NAMED VOLUME vs HOST VOLUME:
+ ┌───────────────────────┬──────────────────────────────────────────────┐
+ │  Host Volume (-v)     │  You specify a path on your machine          │
+ │                       │  /Users/you/data:/container/path             │
+ │                       │  Good for dev (edit files live)              │
+ ├───────────────────────┼──────────────────────────────────────────────┤
+ │  Named Volume         │  Docker manages where the data lives         │
+ │                       │  my-volume:/container/path                   │
+ │                       │  Better for production (cleaner, portable)   │
+ └───────────────────────┴──────────────────────────────────────────────┘
+
+ HOW IT WORKS:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  1. Create a named volume                                             │
+ │     docker volume create custom-data                                  │
+ │                                                                       │
+ │  2. Mount it in a container                                           │
+ │     docker run -it --rm -v custom-data:/server ubuntu                 │
+ │           (container mounts the volume at /server)                    │
+ │                                                                       │
+ │  3. Container is removed → DATA SURVIVES in the volume                │ 
+ │                                                                       │
+ │  4. A new container can pick up right where it left off               │
+ │     docker run -it --rm -v custom-data:/server busybox                │
+ │           (busybox sees the same files ubuntu left!)                  │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ SHARING A VOLUME BETWEEN MULTIPLE CONTAINERS:
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  ┌──────────────────┐   ┌──────────────────────┐                     │
+ │  │ Ubuntu container │   │ BusyBox container    │                     │
+ │  │ reads & writes   │   │ reads & writes       │                     │
+ │  └────────┬─────────┘   └──────────┬───────────┘                     │
+ │           └──────────────────────┐ │                                 │
+ │                          Named Volume: custom-data                   │
+ │                          (persists on Docker host)                   │
+ └──────────────────────────────────────────────────────────────────────┘
+  Both containers share one volume simultaneously!
+
+ VOLUME COMMANDS:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │ docker volume ls                   List all volumes                   │
+ │ docker volume create my-vol        Create a named volume              │
+ │ docker volume inspect my-vol       Inspect a volume                   │
+ │ docker volume rm my-vol            Remove a volume                    │
+ │ docker volume prune                Remove all unused volumes          │
+ └───────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 20 — INTRODUCTION TO DOCKER COMPOSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ PROBLEM: Your app needs multiple services (Node + Redis + Postgres).
+          Running each manually is painful and error-prone.
+
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  WITHOUT Compose:                                                    │
+ │  docker run -d postgres:16 -e POSTGRES_PASSWORD=... -p 5431:5432     │
+ │  docker run -d redis:latest -p 6379:6379                             │
+ │  npm start      ← hope both services are up!                         │
+ │                                                                      │
+ │  WITH Compose:                                                       │
+ │  docker compose up -d    ← ONE command starts EVERYTHING             │
+ │  docker compose down     ← ONE command stops EVERYTHING              │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ DOCKER COMPOSE FILE (docker-compose.yml):
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  name: e-commerce                                                     │
+ │                                                                       │
+ │  services:                                                            │
+ │    db:                                                                │
+ │      image: postgres:16                                               │
+ │      container_name: postgres                                         │
+ │      environment:                                                     │
+ │        POSTGRES_PASSWORD: postgres                                    │
+ │        POSTGRES_USER: postgres                                        │
+ │        POSTGRES_DB: postgres                                          │
+ │      ports:                                                           │
+ │        - "5431:5432"        # host:container                          │ 
+ │                                                                       │
+ │    redis:                                                             │
+ │      image: redis                                                     │
+ │      container_name: redis                                            │
+ │      ports:                                                           │
+ │        - "6379:6379"                                                  │
+ │      depends_on:                                                      │
+ │        - db                 # starts only after db is ready           │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ KEY COMMANDS:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │ docker compose up            Start all services (foreground)          │
+ │ docker compose up -d         Start all services (detached/bg)         │
+ │ docker compose down          Stop and remove all containers           │
+ │ docker compose logs          View logs from all services              │
+ │ docker compose ps            List running compose services            │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ INTERNAL NETWORK:
+ Docker Compose automatically creates a shared bridge network.
+ All services can talk to each other by service name (not IP):
+   e.g., redis can connect to DB by just saying "db" as hostname.
+
+ DEPENDS_ON:
+   depends_on: [db]  → this service won't start until "db" is running.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 21 — NETWORKING IN DOCKER COMPOSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Docker Compose auto-creates one network for ALL services in the file.
+ Network name = <project_name>_default  (e.g., e-commerce_default)
+
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  Network: e-commerce_default (bridge, auto-created)                  │
+ │  ┌────────────────┐  ┌──────────────┐  ┌──────────────┐              │
+ │  │  backend       │  │  db          │  │  redis        │             │
+ │  │  (your app)    │  │  (postgres)  │  │  (redis)      │             │
+ │  └────────────────┘  └──────────────┘  └──────────────┘              │
+ │                                                                      │
+ │  backend can connect to postgres with: host="db", port=5432          │
+ │  backend can connect to redis with:    host="redis", port=6379       │
+ │  (NO need for localhost or IP addresses!)                            │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ CUSTOM NETWORKS (optional, for advanced isolation):
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  networks:                                                            │
+ │    frontend:                                                          │
+ │      driver: bridge                                                   │
+ │    backend:                                                           │
+ │      driver: bridge                                                   │
+ │                                                                       │
+ │  services:                                                            │
+ │    web:                                                               │
+ │      networks: [frontend, backend]  ← connected to both               │
+ │    db:                                                                │
+ │      networks: [backend]            ← only backend network            │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ Containers on the same network can communicate by name.
+ Containers on different networks CANNOT communicate.
+ In most cases, the default auto-created network is all you need.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 22 — VOLUMES IN DOCKER COMPOSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ PROBLEM: When you run "docker compose down", all container data is lost.
+          Postgres tables = gone. Redis cache = gone.
+
+ SOLUTION: Mount a named volume to persist data across restarts.
+
+ WHERE POSTGRES STORES DATA:  /var/lib/postgresql/data
+ WHERE REDIS STORES DATA:     /data
+
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  name: e-commerce                                                     │
+ │                                                                       │
+ │  services:                                                            │
+ │    db:                                                                │
+ │      image: postgres:16                                               │
+ │      volumes:                                                         │
+ │        - postgres_data:/var/lib/postgresql/data   ← mount here        │
+ │                                                                       │
+ │    redis:                                                             │
+ │      image: redis                                                     │
+ │      volumes:                                                         │
+ │        - redis_data:/data                         ← mount here        │
+ │                                                                       │
+ │  volumes:                         ← declare volumes at bottom         │
+ │    postgres_data:                 ← Docker manages this volume        │
+ │    redis_data:                    ← Docker manages this volume        │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ WHAT HAPPENS:
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  docker compose up     → volumes created, containers mounted         │
+ │  docker compose down   → containers removed, VOLUMES SURVIVE ✓       │
+ │  docker compose up     → containers remount same volumes             │
+ │                           Postgres data is still there! ✓            │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ Verify volumes persist:
+   docker volume ls | grep postgres   ← still there after compose down
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 23 — RUNNING YOUR OWN APP IN DOCKER COMPOSE (Custom Builds)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Goal: Run your Node/TypeScript backend INSIDE Docker Compose
+       (not just Redis and Postgres, but your app too!)
+
+ TWO WAYS to add your app as a service:
+
+ WAY 1 — Pull pre-published image from Docker Hub:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  services:                                                            │
+ │    backend:                                                           │
+ │      image: yourname/backend-app     ← pull from hub.docker.com       │
+ │      container_name: backend                                          │
+ │      ports:                                                           │
+ │        - "8000:8000"                                                  │
+ │  Problem: Every code change = must push to Hub and re-pull. Slow!     │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ WAY 2 — Build from local Dockerfile (recommended for development):
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  services:                                                            │
+ │    backend:                                                           │
+ │      build:                                                           │
+ │        context: .          ← read Dockerfile from current dir         │
+ │        dockerfile: Dockerfile                                         │
+ │      container_name: backend                                          │
+ │      ports:                                                           │
+ │        - "8000:8000"                                                  │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ CRITICAL: Inside the container, Redis is NOT at "localhost:6379"
+           It is at "redis:6379" (the service name)!
+
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  WRONG (app inside container):  redis.connect("localhost", 6379)    │
+ │  RIGHT (app inside container):  redis.connect("redis", 6379)        │
+ │                                                                      │
+ │  WRONG (postgres):  db.connect("localhost:5432")                    │
+ │  RIGHT (postgres):  db.connect("db:5432")                           │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ SECURITY — Hide internal services from the public internet:
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  backend:  ports: ["8000:8000"]   ← EXPOSED to outside world ✓     │
+ │  db:       NO ports defined       ← HIDDEN from outside world ✓     │
+ │  redis:    NO ports defined       ← HIDDEN from outside world ✓     │
+ │                                                                      │
+ │  Backend can still reach db and redis via internal network.         │
+ │  But nobody outside can directly reach your database!               │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ REBUILD after code changes:
+   docker compose up --build     ← rebuilds image before starting
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 24 — WHAT IS DOCKER ORCHESTRATION?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Docker Compose is great for development.
+ For production at scale, you need ORCHESTRATION.
+
+ THE MANUAL SCALING PROBLEM:
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  Traffic spikes → you manually run more containers                  │
+ │  Traffic drops  → you manually kill containers                      │
+ │  Container crashes → you manually restart it                        │
+ │  Need load balancer → you manually configure nginx                  │
+ │  Need logs         → you manually collect from each container       │
+ │                                                                      │
+ │  This is NOT scalable. You can't babysit containers 24/7.           │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ ORCHESTRATION = Tools that do all of this automatically.
+
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  Orchestrator handles:                                               │
+ │  ✓ Auto scale up when traffic increases (more containers)           │
+ │  ✓ Auto scale down when traffic decreases (fewer containers)        │
+ │  ✓ Restart crashed containers automatically                         │
+ │  ✓ Load balance requests across containers                          │
+ │  ✓ Collect logs from all containers centrally                       │
+ │  ✓ Rolling updates (zero-downtime deployments)                      │
+ │  ✓ Health checks (kill unhealthy containers, spin up new ones)      │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ POPULAR ORCHESTRATION TOOLS:
+ ┌────────────────────┬────────────────────────────────────────────────┐
+ │ AWS ECS            │ Amazon's container orchestration (used here)  │
+ │ Kubernetes (K8s)   │ Industry standard, open source                │
+ │ Google Cloud Run   │ Google's serverless container runner          │
+ │ Azure ACI          │ Microsoft Azure containers                    │
+ └────────────────────┴────────────────────────────────────────────────┘
+
+ Concepts learned in AWS ECS are transferable to Kubernetes and others.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 25 — AWS SETUP: IAM + CLI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ STEP 1 — Create an AWS Account at aws.amazon.com
+
+ STEP 2 — Install AWS CLI on your machine
+   Docs: https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html
+   Verify: aws --version
+
+ STEP 3 — Create an IAM User (never use root account for CLI):
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  AWS Console → IAM → Users → Create User                            │
+ │  → Attach "AdministratorAccess" policy                              │
+ │  → Security Credentials → Create Access Key                         │
+ │  → Choose CLI use → Copy Access Key ID + Secret                     │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ STEP 4 — Configure AWS CLI:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  aws configure                                                       │
+ │                                                                      │
+ │  AWS Access Key ID:     [paste your key]                            │
+ │  AWS Secret Access Key: [paste your secret]                         │
+ │  Default region name:   ap-south-1   (Mumbai) or us-east-1 (US)     │
+ │  Default output format: json                                         │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ Verify:
+   aws iam get-user    ← shows the currently configured user
+
+ Stored credentials are in:  ~/.aws/credentials
+ Stored config is in:        ~/.aws/config
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 26 — AWS ECR (Elastic Container Registry)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ECR = Amazon's private Docker Hub. Store your Docker images in AWS.
+
+ ┌────────────────────────────────────────────────────────────────────┐
+ │  hub.docker.com   →  Public registry (anyone can pull)            │
+ │  AWS ECR          →  Private registry (only your AWS account)     │
+ └────────────────────────────────────────────────────────────────────┘
+
+ PUSH IMAGE TO ECR — 4 STEPS:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  Step 1: Create ECR repository                                       │
+ │    AWS Console → ECR → Create Repository → name: "backend"          │
+ │                                                                      │
+ │  Step 2: Authenticate Docker to ECR                                 │
+ │    aws ecr get-login-password --region ap-south-1 | \               │
+ │      docker login --username AWS --password-stdin \                 │
+ │      <your_account_id>.dkr.ecr.ap-south-1.amazonaws.com            │
+ │    Output: Login Succeeded                                           │
+ │                                                                      │
+ │  Step 3: Build and tag your image with ECR URL                      │
+ │    docker build -t backend .                                         │
+ │    docker tag backend \                                              │
+ │      <account_id>.dkr.ecr.ap-south-1.amazonaws.com/backend:latest  │
+ │                                                                      │
+ │  Step 4: Push to ECR                                                │
+ │    docker push \                                                     │
+ │      <account_id>.dkr.ecr.ap-south-1.amazonaws.com/backend:latest  │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ NOTE: Use the "View push commands" button in ECR console for
+       exact commands pre-filled with your account ID and region.
+
+ ARCHITECTURE SO FAR:
+ ┌────────────────────────────────────────────────────────────────────┐
+ │  Your machine                                                      │
+ │  (build image)  ──→  AWS ECR  ←── ECS will pull from here        │
+ └────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 27 — AWS ECS: CLUSTERS, TASK DEFINITIONS, SERVICES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ECS = Elastic Container Service = AWS's container orchestrator.
+
+ ECS ARCHITECTURE — 3 Layers:
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │                                                                      │
+ │   CLUSTER  (logical group of services)                              │
+ │   e.g., "production-cluster" or "dev-cluster"                       │
+ │   ┌─────────────────────────────────────────────────────────┐       │
+ │   │                                                          │       │
+ │   │  SERVICE  (manages containers + load balancing)          │       │
+ │   │  e.g., "api-service", "worker-service"                   │       │
+ │   │  ┌──────────────────────────────────────────────────┐   │       │
+ │   │  │  Uses TASK DEFINITION (what to run, how to run)  │   │       │
+ │   │  │  → which image (ECR URL)                         │   │       │
+ │   │  │  → ports to expose                               │   │       │
+ │   │  │  → CPU + memory                                  │   │       │
+ │   │  │  → environment variables                         │   │       │
+ │   │  │  → health check command                          │   │       │
+ │   │  │  ↓                                               │   │       │
+ │   │  │  CONTAINERS (actual running tasks)               │   │       │
+ │   │  │  [Container 1] [Container 2] [Container 3]       │   │       │
+ │   │  └──────────────────────────────────────────────────┘   │       │
+ │   └─────────────────────────────────────────────────────────┘       │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ FARGATE vs EC2:
+ ┌───────────────┬──────────────────────────────────────────────────────┐
+ │ EC2 mode      │ You provision actual servers, pay always             │
+ │ Fargate mode  │ Serverless. Pay only when containers run. Easier.    │
+ └───────────────┴──────────────────────────────────────────────────────┘
+
+ STEP 1 — CREATE A CLUSTER:
+   ECS Console → Clusters → Create Cluster
+   Name: "dev-cluster" | Infrastructure: Fargate | Enable monitoring
+
+ STEP 2 — CREATE A TASK DEFINITION:
+   ECS → Task Definitions → Create
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  Name:          api-task                                             │
+ │  Launch type:   Fargate                                              │
+ │  OS/Arch:       Linux/ARM64 (if you built on Apple M-series)        │
+ │                 Linux/X86_64 (if you built on Intel/AMD/Windows)    │
+ │  CPU:           1 vCPU                                               │
+ │  Memory:        3 GB                                                 │
+ │                                                                      │
+ │  Container:                                                          │
+ │    Name:        api                                                  │
+ │    Image URI:   <your ECR image URL>                                 │
+ │    Port:        8000 (TCP)                                           │
+ │    Health check: CMD-SHELL, curl -f http://localhost:8000/health     │
+ │                  || exit 1                                           │
+ │    Logs:        Amazon CloudWatch (auto-collect logs)               │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ STEP 3 — CREATE A SERVICE:
+   Cluster → Services → Create
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  Launch type:         Fargate                                        │
+ │  Task definition:     api-task (latest revision)                    │
+ │  Service name:        api                                            │
+ │  Desired tasks:       2         ← run 2 containers at all times     │
+ │  Load balancer:       Application Load Balancer                     │
+ │  Load balancer name:  api-load-balancer                             │
+ │  Listener port:       80 (HTTP)                                      │
+ │  Target group:        auto-created                                   │
+ │  Auto scaling:                                                       │
+ │    Min tasks:         2                                              │
+ │    Max tasks:         5                                              │
+ │    Scale up when:     CPU > 70%                                      │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ FULL PRODUCTION ARCHITECTURE:
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │                                                                      │
+ │  Users → CloudFront (CDN) → Load Balancer → ECS Service            │
+ │                                             ├── Container 1         │
+ │                                             ├── Container 2         │
+ │                                             └── Container N         │
+ │                                                    ↑                 │
+ │                                               pulls image            │
+ │                                               from ECR               │
+ └──────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 28 — HEALTH CHECKS IN ECS (+ DEBUGGING)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ WHAT IS A HEALTH CHECK?
+ ECS constantly checks if your container is alive.
+ It does this by calling a URL you define. If no response = kill + replace.
+
+ ADD A HEALTH ROUTE to your app:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  // Express.js example                                               │
+ │  app.get('/health', (req, res) => {                                  │
+ │    res.json({ message: "I am healthy" });                            │
+ │  });                                                                 │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ HEALTH CHECK IN TASK DEFINITION:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  Command:  CMD-SHELL, curl -f http://localhost:8000/health || exit 1 │
+ │  Interval: 30 seconds   (how often to check)                        │
+ │  Timeout:  5 seconds    (max wait for response)                      │
+ │  Retries:  3            (fail 3 times = container is unhealthy)     │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ HOW HEALTH CHECKS TRIGGER AUTO-RECOVERY:
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  Container A: health check FAILS → ECS marks as unhealthy           │
+ │  ECS: spin up new Container A replacement                            │
+ │  New container: health check PASSES → marked healthy                │
+ │  ECS: kill the old unhealthy container                               │
+ │  Traffic: seamlessly moved to healthy containers only                │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ ⚠️  COMMON BUG — curl not installed in Alpine images!
+
+ If you use Alpine as base image, curl is NOT pre-installed.
+ Health check will always fail because "curl" command doesn't exist.
+
+ FIX — Add this line to your Dockerfile BEFORE the health check runs:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  # Install curl in Alpine                                            │
+ │  RUN apk add --no-cache curl                                         │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ HOW TO DEBUG health check locally:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  # Add HEALTHCHECK to Dockerfile for local testing                  │
+ │  HEALTHCHECK --interval=5s --timeout=5s --start-period=5s \         │
+ │    --retries=3 CMD curl -f http://localhost:8000/health || exit 1   │
+ │                                                                      │
+ │  docker run --rm my-app                                              │
+ │  # Open Docker Desktop → click container → Inspect                  │
+ │  # Look for: "Health": "healthy" or "unhealthy"                     │
+ │  # If unhealthy: look at "Log" to see the error (e.g., "curl not found") │
+ └───────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 29 — DEPLOYING UPDATES & ROLLING DEPLOYMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ When you push new code, how do you update running containers?
+
+ ZERO-DOWNTIME UPDATE WORKFLOW:
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  1. Make code change (e.g., "v2" response)                          │
+ │  2. Build new image:   docker build -t backend .                    │
+ │  3. Tag image:         docker tag backend <ECR_URL>:latest          │
+ │  4. Push to ECR:       docker push <ECR_URL>:latest                 │
+ │  5. Force update:      ECS → Service → Update Service               │
+ │                        ✓ Force new deployment → Update              │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ ROLLING DEPLOYMENT (what happens automatically):
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  Before:  [Container v1] [Container v1]   ← 2 old containers        │
+ │                                                                      │
+ │  Step 1:  [Container v1] [Container v1] [Container v2 starting...]  │
+ │  Step 2:  ECS waits for v2 to pass health check                     │
+ │  Step 3:  [Container v1] [Container v2 healthy!]                    │
+ │  Step 4:  Old Container v1 is killed                                │
+ │                                                                      │
+ │  After:   [Container v2] [Container v2]   ← 2 new containers        │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ If new container FAILS health check:
+   → New container is killed
+   → Old containers keep serving traffic
+   → Automatic rollback! No downtime.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 30 — CLOUDFRONT CDN (Content Delivery Network)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ WHY CDN?
+ Without CDN: User in USA → request travels all the way to Mumbai server.
+ With CDN:    User in USA → request hits nearest edge server in USA.
+
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  CloudFront = AWS CDN with edge servers worldwide                   │
+ │                                                                      │
+ │  User (USA)  →  CloudFront (USA edge)  →  Load Balancer (Mumbai)   │
+ │                          ↑                                           │
+ │                   Caches responses here                             │
+ │                   Users get faster responses!                        │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ SETUP:
+   AWS Console → CloudFront → Create Distribution
+   → Origin: select your Load Balancer
+   → Protocol: HTTP only (load balancer is HTTP)
+   → Viewer Protocol Policy: Redirect HTTP to HTTPS
+   → Disable WAF (optional, for cost saving in dev)
+   → Create Distribution
+
+ CloudFront gives you a URL like:
+   https://xxxxxx.cloudfront.net   → your app, via global CDN
+
+ COMPLETE PRODUCTION STACK:
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │                                                                      │
+ │  Internet Users                                                      │
+ │       │                                                              │
+ │       ▼                                                              │
+ │  CloudFront (CDN, HTTPS, global edge caching)                       │
+ │       │                                                              │
+ │       ▼                                                              │
+ │  Application Load Balancer (AWS, port 80/443)                       │
+ │       │                                                              │
+ │       ├──────────────────────────────────┐                          │
+ │       ▼                                  ▼                          │
+ │  ECS Container 1                   ECS Container 2                  │
+ │  (auto-scaled, health-checked, rolling updates)                     │
+ │       │                                  │                          │
+ │       └──────────────────────────────────┘                          │
+ │                         │                                            │
+ │                  Pulls images from ECR                              │
+ └──────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 31 — AUTO SCALING IN ECS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ECS auto scaling works based on policies you define:
+
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  Minimum containers: 2   (always keep at least 2 running)           │
+ │  Maximum containers: 5   (never exceed 5)                           │
+ │  Scale up trigger:   CPU average > 70%                              │
+ │                                                                      │
+ │  Traffic low:   2 containers running                                │
+ │  Traffic spike: 2 → 3 → 4 containers (auto)                        │
+ │  Traffic drops: 4 → 3 → 2 containers (auto, down to minimum)       │
+ └──────────────────────────────────────────────────────────────────────┘
+
+ SCALING POLICY OPTIONS:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  CPU Utilization      → most common, scale when CPU > X%            │
+ │  Memory Utilization   → scale when memory > X%                      │
+ │  Request Count        → scale based on ALB request count            │
+ └───────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ CHAPTER 32 — CLEANUP AWS RESOURCES (Avoid Unexpected Bills!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ⚠️  ALWAYS clean up after practice. AWS charges for running services!
+
+ CLEANUP ORDER (must follow this order):
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  Step 1: Disable CloudFront distribution                            │
+ │    CloudFront → select distribution → Disable → wait for deploy     │
+ │    Then: Delete the distribution                                     │
+ │                                                                      │
+ │  Step 2: Downscale ECS Service to zero                              │
+ │    ECS → Cluster → Service → Update Service                         │
+ │    → Set desired tasks = 0                                           │
+ │    → Set auto scaling min = 0, max = 0                              │
+ │    → Wait for all containers to stop                                 │
+ │                                                                      │
+ │  Step 3: Delete ECS Service                                         │
+ │    ECS → Cluster → Services → select → Delete                       │
+ │    (This also deletes load balancer, target group, security groups)  │
+ │                                                                      │
+ │  Step 4: Delete ECS Cluster                                         │
+ │    ECS → Clusters → select → Delete cluster                         │
+ │                                                                      │
+ │  Step 5: Delete ECR Repository                                      │
+ │    ECR → Repositories → select → Delete                             │
+ │                                                                      │
+ │  NOTE: Task definitions cannot be deleted but cost nothing to keep  │
+ └───────────────────────────────────────────────────────────────────────┘
+
+ VERIFY CLEANUP:
+   EC2 → Load Balancers   → should be empty
+   EC2 → Target Groups    → should be empty
+   ECS → Clusters         → should be empty
+   ECR → Repositories     → should be empty
+   CloudFront             → should be disabled/deleted
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ COMPLETE DOCKER COMPOSE REFERENCE FILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ Full production-ready docker-compose.yml for a Node/TS app:
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  name: my-app                                                        │
+ │                                                                      │
+ │  services:                                                           │
+ │    backend:                                                          │
+ │      build:                                                          │
+ │        context: .                                                    │
+ │        dockerfile: Dockerfile                                        │
+ │      container_name: backend                                         │
+ │      ports:                                                          │
+ │        - "8000:8000"                                                 │
+ │      environment:                                                    │
+ │        - PORT=8000                                                   │
+ │        - DB_HOST=db                   ← service name, not localhost  │
+ │        - REDIS_HOST=redis             ← service name, not localhost  │
+ │      depends_on:                                                     │
+ │        - db                                                          │
+ │        - redis                                                       │
+ │                                                                      │
+ │    db:                                                               │
+ │      image: postgres:16                                              │
+ │      container_name: postgres                                        │
+ │      environment:                                                    │
+ │        POSTGRES_PASSWORD: postgres                                   │
+ │        POSTGRES_USER: postgres                                       │
+ │        POSTGRES_DB: myapp                                            │
+ │      volumes:                                                        │
+ │        - postgres_data:/var/lib/postgresql/data                     │
+ │      # NO ports: section = not exposed to outside world             │
+ │                                                                      │
+ │    redis:                                                            │
+ │      image: redis                                                    │
+ │      container_name: redis                                           │
+ │      volumes:                                                        │
+ │        - redis_data:/data                                            │
+ │      # NO ports: section = not exposed to outside world             │
+ │                                                                      │
+ │  volumes:                                                            │
+ │    postgres_data:                                                    │
+ │    redis_data:                                                       │
+ └───────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ COMPLETE PRODUCTION DOCKERFILE (Alpine + curl + non-root + healthcheck)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ┌───────────────────────────────────────────────────────────────────────┐
+ │  # Stage 1: Build                                                    │
+ │  FROM node:20-alpine AS builder                                      │
+ │  WORKDIR /app                                                        │
+ │  COPY package*.json tsconfig.json ./                                 │
+ │  RUN npm install                                                     │
+ │  COPY src/ src/                                                      │
+ │  RUN npm run build                                                   │
+ │                                                                      │
+ │  # Stage 2: Production runner                                        │
+ │  FROM node:20-alpine AS runner                                       │
+ │  WORKDIR /home/app                                                   │
+ │                                                                      │
+ │  # Install curl for health checks                                   │
+ │  RUN apk add --no-cache curl                                         │
+ │                                                                      │
+ │  # Create non-root user for security                                │
+ │  RUN addgroup --gid 1001 nodejs && \                                 │
+ │      adduser --uid 1001 --ingroup nodejs nodejs                      │
+ │                                                                      │
+ │  # Copy only what's needed from builder                             │
+ │  COPY --from=builder /app/dist ./dist                                │
+ │  COPY package*.json ./                                               │
+ │  RUN npm install --omit=dev                                          │
+ │                                                                      │
+ │  # Expose port                                                       │
+ │  EXPOSE 8000                                                         │
+ │                                                                      │
+ │  # Health check                                                      │
+ │  HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \       │
+ │    --retries=3 CMD curl -f http://localhost:8000/health || exit 1   │
+ │                                                                      │
+ │  # Run as non-root                                                   │
+ │  USER nodejs                                                         │
+ │                                                                      │
+ │  CMD ["npm", "start"]                                                │
+ └───────────────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ FULL LEARNING PATH SUMMARY (Both Parts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ PART 1 (Chapters 1–18) — Docker Fundamentals:
+  ①  Why Docker exists (dev environment consistency)
+  ②  Docker vs VMs (lightweight, shared kernel)
+  ③  Install Docker + verify
+  ④  Images vs Containers (blueprint vs running instance)
+  ⑤  CLI basics: docker run, ps, rm, images
+  ⑥  docker run flags: -i, -t, -d, -p, -P, --rm, --name
+  ⑦  Create custom Dockerfile
+  ⑧  Optimize: Alpine base, layer caching order
+  ⑨  Port mapping (-p host:container)
+  ⑩  Publish to Docker Hub
+  ⑪  Multi-stage builds (build stage + runner stage)
+  ⑫  Security: non-root user, env variables
+  ⑬  Bridge networking (default + user-defined)
+  ⑭  User-defined networks for microservices
+  ⑮  Host volume mounting (-v /host:/container)
+
+ PART 2 (Chapters 19–33) — Compose + Production:
+  ⑯  Named volumes (docker volume create, persistent)
+  ⑰  Docker Compose basics (docker-compose.yml)
+  ⑱  Networking in Compose (auto network + service names)
+  ⑲  Volumes in Compose (persist Postgres, Redis data)
+  ⑳  Custom builds in Compose (build: context vs image:)
+  ㉑  What is orchestration (manual vs automated scaling)
+  ㉒  AWS account + IAM user + CLI setup
+  ㉓  AWS ECR (push Docker images to cloud registry)
+  ㉔  AWS ECS architecture (Cluster → Service → Task → Container)
+  ㉕  Task definitions (image, port, CPU, health check)
+  ㉖  ECS Services (desired count, load balancer, auto scale)
+  ㉗  Health checks (why + how + common bugs)
+  ㉘  Rolling deployments (zero downtime updates)
+  ㉙  CloudFront CDN (edge caching, HTTPS)
+  ㉚  Cleanup AWS resources (avoid billing surprises!)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ KEY MENTAL MODELS TO REMEMBER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ┌──────────────────────────────────────────────────────────────────────┐
+ │  Image        = Blueprint (like a Windows ISO)                      │
+ │  Container    = Running instance (like a laptop running Windows)    │
+ │  Dockerfile   = Recipe to build your custom image                   │
+ │  Volume       = Persistent storage that survives containers         │
+ │  Network      = Private LAN for containers to talk to each other   │
+ │  Compose      = One file to define + run your whole infrastructure  │
+ │  ECR          = Private Docker Hub on AWS                           │
+ │  ECS          = AWS service that runs + manages containers          │
+ │  Cluster      = Group of services (prod/dev/staging)                │
+ │  Service      = Manages N copies of your container, load balances   │
+ │  Task Def     = Blueprint for a container (image, ports, env, CPU)  │
+ │  Health check = Heartbeat test to prove container is alive          │
+ │  CloudFront   = CDN that caches and serves your app globally        │
+ └──────────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ LEARNING PATH SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ ①  Understand WHY Docker exists (dev environment consistency)
+ ②  Understand Docker vs VMs (lightweight, shared kernel)
+ ③  Install Docker Desktop + verify with docker version
+ ④  Learn Image vs Container (blueprint vs running instance)
+ ⑤  Master docker run, docker ps, docker rm, docker images
+ ⑥  Create your own Dockerfile (FROM, WORKDIR, COPY, RUN, CMD)
+ ⑦  Optimize with lightweight base images + correct layer order
+ ⑧  Use port mapping (-p) to access container from host
+ ⑨  Use detached mode (-d) + --rm for clean workflows
+ ⑩  Publish images to Docker Hub (docker push)
+ ⑪  Use multi-stage builds for lean production images
+ ⑫  Apply security: non-root user, env variables with -e
+ ⑬  Understand bridge networking (default + user-defined)
+ ⑭  Use user-defined networks for microservices (DNS by name!)
+ ⑮  Use volumes (-v) for persistent data across containers
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ NEXT STEPS (not covered in this course section)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ → Docker Compose   (spin up multi-container apps with one command)
+ → Docker Compose CLI (manage dev environments with one click)
+ → Container Orchestration (Kubernetes, Docker Swarm)
+ → Scaling containers up/down
+ → Private container registries (ECR, GCR, DigitalOcean)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
