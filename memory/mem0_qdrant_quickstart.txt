@@ -1,0 +1,239 @@
+================================================================================
+  MEM0 + QDRANT — MEMORY AGENT QUICK REFERENCE
+  (for rapid rebuild / integration into other projects)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. INSTALL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+pip install mem0ai openai python-dotenv
+
+pip freeze > requirements.txt
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. SPIN UP QDRANT (Vector DB) via Docker
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# docker-compose.yml
+----------------------------------------------------------------------
+version: "3"
+services:
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"
+----------------------------------------------------------------------
+
+Run it:
+  docker compose up -d
+
+Dashboard:
+  http://localhost:6333/dashboard
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. .env FILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OPENAI_API_KEY=sk-...
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. MEM0 CONFIGURATION (config dict)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+config = {
+    "version": "v1.1",
+
+    # How to create vector embeddings
+    "embedder": {
+        "provider": "openai",
+        "config": {
+            "api_key": os.getenv("OPENAI_API_KEY"),
+            "model": "text-embedding-3-small"
+        }
+    },
+
+    # Which LLM to use for extracting/summarising memories
+    "llm": {
+        "provider": "openai",
+        "config": {
+            "api_key": os.getenv("OPENAI_API_KEY"),
+            "model": "gpt-4.1"
+        }
+    },
+
+    # Where to store the vector embeddings
+    "vector_store": {
+        "provider": "qdrant",
+        "config": {
+            "host": "localhost",
+            "port": 6333
+        }
+    }
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. FULL memory.py — COMPLETE WORKING AGENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import os
+import json
+from dotenv import load_dotenv
+from openai import OpenAI
+from mem0 import Memory
+
+load_dotenv()
+
+# ── Config ────────────────────────────────────────────────────────────────────
+config = {
+    "version": "v1.1",
+    "embedder": {
+        "provider": "openai",
+        "config": {
+            "api_key": os.getenv("OPENAI_API_KEY"),
+            "model": "text-embedding-3-small"
+        }
+    },
+    "llm": {
+        "provider": "openai",
+        "config": {
+            "api_key": os.getenv("OPENAI_API_KEY"),
+            "model": "gpt-4.1"
+        }
+    },
+    "vector_store": {
+        "provider": "qdrant",
+        "config": {
+            "host": "localhost",
+            "port": 6333
+        }
+    }
+}
+
+# ── Clients ───────────────────────────────────────────────────────────────────
+client = OpenAI()
+memory_client = Memory.from_config(config)
+
+USER_ID = "piyushgarg"   # <-- change per user
+
+# ── Chat loop ─────────────────────────────────────────────────────────────────
+while True:
+    user_query = input("You: ")
+
+    # 1. Search for relevant memories (vector similarity on query)
+    search_results = memory_client.search(query=user_query, user_id=USER_ID)
+    memories = search_results.get("results", [])
+
+    # 2. Build system prompt with retrieved memories
+    system_prompt = f"""
+    Here is the context about the user:
+    {json.dumps(memories)}
+    Use this to personalise your response.
+    """
+    print("Found memories:", memories)   # debug — remove in prod
+
+    # 3. Call LLM with memory-injected system prompt
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_query}
+        ]
+    )
+    ai_response = response.choices[0].message.content
+    print("AI:", ai_response)
+
+    # 4. Save this conversation turn as a new memory
+    memory_client.add(
+        messages=[
+            {"role": "user",      "content": user_query},
+            {"role": "assistant", "content": ai_response}
+        ],
+        user_id=USER_ID
+    )
+    print("Memory saved.\n")
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. KEY API CALLS — CHEAT SHEET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ACTION                  CODE
+──────────────────────  ──────────────────────────────────────────────────────
+Create memory client    memory_client = Memory.from_config(config)
+
+Save a memory           memory_client.add(
+                            messages=[...],   # list of {role, content} dicts
+                            user_id=USER_ID
+                        )
+
+Search memories         results = memory_client.search(
+                            query=user_query,
+                            user_id=USER_ID
+                        )
+                        memories = results.get("results", [])
+
+Get all memories        memory_client.get_all(user_id=USER_ID)
+
+Delete a memory         memory_client.delete(memory_id=<id>)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. HOW IT WORKS — MENTAL MODEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+User message
+    │
+    ▼
+memory_client.search(query, user_id)
+    │  (vector similarity in Qdrant — finds only RELEVANT memories)
+    ▼
+Inject memories → system prompt
+    │
+    ▼
+LLM responds (no full chat history needed — memories replace it)
+    │
+    ▼
+memory_client.add(messages, user_id)
+    │  (MEM0 auto-extracts facts and stores as vectors in Qdrant)
+    ▼
+Qdrant stores embedding for future retrieval
+
+Key insight: You do NOT pass full chat history every turn.
+             MEM0 + Qdrant replaces history with relevant memory retrieval.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. MEMORY TYPES RECAP (what MEM0 stores automatically)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TYPE         WHAT                      WHEN RETRIEVED
+──────────── ───────────────────────── ──────────────────────────────────────
+Factual      Name, age, preferences    Always inject into system prompt
+Episodic     Past events/interactions  On-demand via search() when relevant
+Semantic     General world knowledge   Rarely needed — LLM already knows it
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. INTEGRATING INTO ANOTHER PROJECT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Steps:
+  1. pip install mem0ai
+  2. Spin up Qdrant (docker compose up -d)
+  3. Copy the config dict (section 4) into your project
+  4. memory_client = Memory.from_config(config)
+  5. Before every LLM call  → memory_client.search(query, user_id)
+  6. After every LLM call   → memory_client.add(messages, user_id)
+  7. Inject search results as system prompt context
+
+  That's it. Works with any LLM (OpenAI, Gemini, etc.)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DOCS: https://docs.mem0.ai
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
